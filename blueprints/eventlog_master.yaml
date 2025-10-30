@@ -1,27 +1,6 @@
 blueprint:
   name: EventLog - Event Collector & Manager
-  description: |
-    A simple, configurable blueprint for collecting and managing events in Home Assistant.
-
-    EventLog captures events from various sources, stores them with metadata, and allows
-    users to acknowledge and close events. Perfect for monitoring system health, device
-    status changes, and creating custom alerts.
-
-    Features:
-    • Collect events from automations and custom sources
-    • Categorize by severity (critical, major, minor, warning, log)
-    • Prevent duplicates with occurrence counting
-    • Acknowledge and close events
-    • Auto-archive old events
-    • Store in Home Assistant helpers (no database needed)
-    • Simple UI: just import and configure
-
-    How to use:
-    1. Import blueprint via "Import Blueprint" menu
-    2. Create automation from blueprint
-    3. Configure your preferences
-    4. Done! Start logging events or trigger from other automations
-
+  description: Home Assistant blueprint for collecting and managing events with deduplication, acknowledgment, and archival.
   domain: automation
   source_url: https://github.com/Alvin366/EventLog/blob/main/blueprints/eventlog_master.yaml
 
@@ -32,6 +11,7 @@ blueprint:
       default: system
       selector:
         text:
+          multiline: false
 
     event_severity:
       name: Event Severity Level
@@ -91,10 +71,11 @@ blueprint:
 
     notification_service:
       name: Notification Service
-      description: Service for notifications (e.g., notify.mobile_app_iphone)
+      description: Service for notifications
       default: notify.notify
       selector:
         text:
+          multiline: false
 
 trigger:
   - platform: event
@@ -122,12 +103,6 @@ action:
   - variables:
       current_active: >-
         {% set events = state_attr('input_text.eventlog_active_events', 'value') | default('[]') | from_json %}
-        {% if events is iterable %} {{ events }} {% else %} [] {% endif %}
-      acked_events: >-
-        {% set events = state_attr('input_text.eventlog_acknowledged_events', 'value') | default('[]') | from_json %}
-        {% if events is iterable %} {{ events }} {% else %} [] {% endif %}
-      archive_events: >-
-        {% set events = state_attr('input_text.eventlog_archive', 'value') | default('[]') | from_json %}
         {% if events is iterable %} {{ events }} {% else %} [] {% endif %}
 
   - variables:
