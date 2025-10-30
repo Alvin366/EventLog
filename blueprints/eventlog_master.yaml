@@ -62,21 +62,6 @@ blueprint:
           step: 1
           unit_of_measurement: days
 
-    notify_critical:
-      name: Notify on Critical Events
-      description: Send notification when critical events occur
-      default: false
-      selector:
-        boolean:
-
-    notification_service:
-      name: Notification Service
-      description: Service for notifications
-      default: notify.notify
-      selector:
-        text:
-          multiline: false
-
 trigger:
   - platform: event
     event_type: eventlog.log_event
@@ -93,8 +78,6 @@ action:
       dedup_key: "{{ event_data.get('dedup_key', category ~ '_' ~ title | replace(' ', '_') | lower) }}"
       timestamp: "{{ now().isoformat() }}"
       dedup_mins: !input dedup_window
-      notify_critical_enabled: !input notify_critical
-      notification_svc: !input notification_service
 
   - service: input_text.set_value
     data:
@@ -160,15 +143,6 @@ action:
         data:
           entity_id: input_text.eventlog_active_events
           value: "{{ new_active | to_json }}"
-
-  - if:
-      - condition: template
-        value_template: "{{ notify_critical_enabled and severity == 'critical' }}"
-    then:
-      - service: "{{ notification_svc }}"
-        data:
-          title: "🚨 Critical Event"
-          message: "{{ title }}: {{ message }}"
 
 mode: queued
 max_exceeded: silent
