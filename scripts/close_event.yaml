@@ -1,0 +1,132 @@
+close_event:
+  alias: "Close Event"
+  description: |
+    Close a resolved event. Event becomes eligible for archival
+    after the configured archive period.
+
+  mode: parallel
+
+  fields:
+    event_id:
+      name: "Event ID"
+      description: "ID of event to close"
+      required: true
+      selector:
+        text:
+
+    resolution_note:
+      name: "Resolution Note"
+      description: "How was the event resolved"
+      required: false
+      selector:
+        text:
+
+  sequence:
+    - variables:
+        event_id: "{{ event_id }}"
+        resolution_note: "{{ resolution_note | default('Issue resolved') }}"
+        timestamp: "{{ now().isoformat() }}"
+
+    # Try active events first
+    - variables:
+        current_events: >-
+          {% set events = state_attr('input_text.eventlog_active_events', 'value') | default('[]') | from_json %}
+          {% if events is not iterable %}
+            []
+          {% else %}
+            {{ events }}
+          {% endif %}
+
+    # Look for event
+    - variables:
+        event_to_close: >-
+          {% set found = none %}
+          {% for event in current_events %}
+            {% if event.id == event_id %}
+              {% set found = event %}
+            {% endif %}
+          {% endfor %}
+          {{ found }}
+
+    - if:
+        - condition: template
+          value_template: "{{ event_to_close is not none }}"
+      then:
+        # Close the event
+        - variables:
+            closed_event: >-
+              {% set e = event_to_close.copy() %}
+              {% set _ = e.update({
+                'status': 'closed',
+                'closed_at': timestamp,
+                'resolution_note': resolution_note
+              }) %}
+              {{ e }}
+
+        # Remove from active
+        - variables:
+            remaining_active: >-
+              {% set result = [] %}
+              {% for event in current_events %}
+                {% if event.id != event_id %}
+                  {% set _ = result.append(event) %}
+                {% endif %}
+              {% endfor %}
+              {{ result }}
+
+        - service: input_text.set_value
+          target:
+            entity_id: input_text.eventlog_active_events
+          data:
+            value: "{{ remaining_active | to_json }}"
+
+        # Also remove from acknowledged if present there
+        - variables:
+            acknowledged_events: >-
+              {% set events = state_attr('input_text.eventlog_acknowledged_events', 'value') | default('[]') | from_json %}
+              {% if events is not iterable %}
+                []
+              {% else %}
+                {{ events }}
+              {% endif %}
+
+        - variables:
+            remaining_acknowledged: >-
+              {% set result = [] %}
+              {% for event in acknowledged_events %}
+                {% if event.id != event_id %}
+                  {% set _ = result.append(event) %}
+                {% endif %}
+              {% endfor %}
+              {{ result }}
+
+        - service: input_text.set_value
+          target:
+            entity_id: input_text.eventlog_acknowledged_events
+          data:
+            value: "{{ remaining_acknowledged | to_json }}"
+
+        # Move to archive
+        - variables:
+            archive_events: >-
+              {% set events = state_attr('input_text.eventlog_archive', 'value') | default('[]') | from_json %}
+              {% if events is not iterable %}
+                []
+              {% else %}
+                {{ events }}
+              {% endif %}
+
+        - variables:
+            updated_archive: "{{ archive_events + [closed_event] }}"
+
+        - service: input_text.set_value
+          target:
+            entity_id: input_text.eventlog_archive
+          data:
+            value: "{{ updated_archive | to_json }}"
+
+        - service: system_log.write
+          data:
+            level: info
+            logger: event_log_collector
+            message: "Event closed: {{ event_to_close.id }} - {{ resolution_note }}"

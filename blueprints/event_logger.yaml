@@ -1,0 +1,183 @@
+blueprint:
+  name: EventLog - Main Event Logger
+  description: |
+    Main blueprint for EventLog system. Processes events from EventLogCollector
+    and stores them in Home Assistant helpers. Handles deduplication, lifecycle
+    management, and archival.
+  domain: automation
+  source_url: https://github.com/Alvin366/EventLog/blob/main/blueprints/event_logger.yaml
+  input:
+    log_events:
+      name: "Collect HA Core Log Events"
+      description: "Capture events from EventLogCollector"
+      default: true
+      selector:
+        boolean:
+
+    min_event_category:
+      name: "Minimum Event Category to Log"
+      description: "Only log events at this severity level or higher"
+      default: log
+      selector:
+        select:
+          options:
+            - critical
+            - major
+            - minor
+            - warning
+            - log
+
+    enable_acknowledgment:
+      name: "Enable Event Acknowledgment"
+      description: "Allow users to acknowledge (but not close) events"
+      default: true
+      selector:
+        boolean:
+
+    enable_closure:
+      name: "Enable Event Closure"
+      description: "Allow users to close resolved events"
+      default: true
+      selector:
+        boolean:
+
+    enable_auto_archive:
+      name: "Enable Auto Archive"
+      description: "Automatically archive closed events after X days"
+      default: true
+      selector:
+        boolean:
+
+trigger:
+  - platform: event
+    event_type: event_log_collector.event_detected
+
+condition:
+  - condition: state
+    entity_id: input_boolean.eventlog_enabled
+    state: "on"
+  - condition: template
+    value_template: "{{ trigger.event.data.category in ['critical', 'major', 'minor', 'warning', 'log'] }}"
+
+action:
+  - variables:
+      category: "{{ trigger.event.data.category }}"
+      source: "{{ trigger.event.data.source | default('unknown') }}"
+      title: "{{ trigger.event.data.title }}"
+      message: "{{ trigger.event.data.message }}"
+      recommended_action: "{{ trigger.event.data.recommended_action | default('') }}"
+      dedup_key: "{{ trigger.event.data.deduplication_key }}"
+      timestamp: "{{ now().isoformat() }}"
+
+  # Step 1: Log the event to DevTools
+  - service: system_log.write
+    data:
+      level: info
+      logger: event_log_collector
+      message: "Event logged: {{ title }} ({{ category }}) - {{ dedup_key }}"
+
+  # Step 2: Load current active events
+  - variables:
+      current_events: >-
+        {% set events = state_attr('input_text.eventlog_active_events', 'value') | default('[]') | from_json %}
+        {% if events is not iterable %}
+          []
+        {% else %}
+          {{ events }}
+        {% endif %}
+
+  # Step 3: Check for duplicate (same dedup_key)
+  - variables:
+      existing_event: >-
+        {% set events = current_events %}
+        {% set found = none %}
+        {% for event in events %}
+          {% if event.deduplication_key == dedup_key %}
+            {% set found = event %}
+          {% endif %}
+        {% endfor %}
+        {{ found }}
+      is_duplicate: "{{ existing_event is not none }}"
+
+  # Step 4: Handle duplicate vs new event
+  - if:
+      - condition: template
+        value_template: "{{ is_duplicate }}"
+    then:
+      # Update existing event
+      - variables:
+          updated_events: >-
+            {% set events = current_events %}
+            {% set result = [] %}
+            {% for event in events %}
+              {% if event.deduplication_key == dedup_key %}
+                {% set updated = event.copy() %}
+                {% set _ = updated.update({
+                  'last_occurrence': timestamp,
+                  'occurrence_count': (event.occurrence_count | int(1)) + 1
+                }) %}
+                {% set _ = result.append(updated) %}
+              {% else %}
+                {% set _ = result.append(event) %}
+              {% endif %}
+            {% endfor %}
+            {{ result }}
+
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.eventlog_active_events
+        data:
+          value: "{{ updated_events | to_json }}"
+
+      - service: system_log.write
+        data:
+          level: debug
+          logger: event_log_collector
+          message: "Event deduplicated: {{ dedup_key }} (count: {{ updated_events[0].occurrence_count if updated_events[0].deduplication_key == dedup_key }})"
+
+    else:
+      # Create new event
+      - variables:
+          new_event:
+            id: "evt_{{ now().timestamp() | int }}_{{ range(1000, 9999) | random }}"
+            category: "{{ category }}"
+            source: "{{ source }}"
+            status: active
+            timestamp: "{{ timestamp }}"
+            first_occurrence: "{{ timestamp }}"
+            last_occurrence: "{{ timestamp }}"
+            occurrence_count: 1
+            title: "{{ title }}"
+            message: "{{ message }}"
+            recommended_action: "{{ recommended_action }}"
+            deduplication_key: "{{ dedup_key }}"
+
+      - variables:
+          updated_events: "{{ current_events + [new_event] }}"
+
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.eventlog_active_events
+        data:
+          value: "{{ updated_events | to_json }}"
+
+      - service: system_log.write
+        data:
+          level: info
+          logger: event_log_collector
+          message: "New event created: {{ dedup_key }}"
+
+  # Step 5: Optionally send to InfluxDB
+  - condition: state
+    entity_id: input_boolean.eventlog_enable_influxdb
+    state: "on"
+  - service: rest.post
+    data:
+      resource: "{{ state_attr('input_text.eventlog_influxdb_url', 'value') }}"
+      username: "{{ state_attr('input_text.eventlog_influxdb_user', 'value') }}"
+      password: "{{ state_attr('input_text.eventlog_influxdb_password', 'value') }}"
+      payload: >-
+        eventlog,category={{ category }},source={{ source }} title="{{ title }}",message="{{ message }}",count={{ (existing_event.occurrence_count | int(1)) if is_duplicate else 1 }} {{ (now().timestamp() * 1e9) | int }}
+
+mode: parallel
+max: 100

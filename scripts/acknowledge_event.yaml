@@ -1,0 +1,107 @@
+acknowledge_event:
+  alias: "Acknowledge Event"
+  description: |
+    Acknowledge an active event. Moves event from active to acknowledged
+    but keeps it in history for future reference.
+
+  mode: parallel
+
+  fields:
+    event_id:
+      name: "Event ID"
+      description: "ID of event to acknowledge"
+      required: true
+      selector:
+        text:
+
+    note:
+      name: "Acknowledgment Note"
+      description: "Optional note about acknowledgment"
+      required: false
+      selector:
+        text:
+
+  sequence:
+    - variables:
+        event_id: "{{ event_id }}"
+        note: "{{ note | default('Acknowledged') }}"
+        timestamp: "{{ now().isoformat() }}"
+
+    # Load current active events
+    - variables:
+        current_events: >-
+          {% set events = state_attr('input_text.eventlog_active_events', 'value') | default('[]') | from_json %}
+          {% if events is not iterable %}
+            []
+          {% else %}
+            {{ events }}
+          {% endif %}
+
+    # Load acknowledged events
+    - variables:
+        acknowledged_events: >-
+          {% set events = state_attr('input_text.eventlog_acknowledged_events', 'value') | default('[]') | from_json %}
+          {% if events is not iterable %}
+            []
+          {% else %}
+            {{ events }}
+          {% endif %}
+
+    # Find and move event
+    - variables:
+        event_to_move: >-
+          {% set found = none %}
+          {% for event in current_events %}
+            {% if event.id == event_id %}
+              {% set found = event %}
+            {% endif %}
+          {% endfor %}
+          {{ found }}
+
+    - if:
+        - condition: template
+          value_template: "{{ event_to_move is not none }}"
+      then:
+        # Update event status
+        - variables:
+            updated_event: >-
+              {% set e = event_to_move.copy() %}
+              {% set _ = e.update({
+                'status': 'acknowledged',
+                'acknowledged_at': timestamp,
+                'acknowledgment_note': note
+              }) %}
+              {{ e }}
+
+        # Remove from active, add to acknowledged
+        - variables:
+            remaining_active: >-
+              {% set result = [] %}
+              {% for event in current_events %}
+                {% if event.id != event_id %}
+                  {% set _ = result.append(event) %}
+                {% endif %}
+              {% endfor %}
+              {{ result }}
+
+        - variables:
+            updated_acknowledged: "{{ acknowledged_events + [updated_event] }}"
+
+        # Update helpers
+        - service: input_text.set_value
+          target:
+            entity_id: input_text.eventlog_active_events
+          data:
+            value: "{{ remaining_active | to_json }}"
+
+        - service: input_text.set_value
+          target:
+            entity_id: input_text.eventlog_acknowledged_events
+          data:
+            value: "{{ updated_acknowledged | to_json }}"
+
+        - service: system_log.write
+          data:
+            level: info
+            logger: event_log_collector
+            message: "Event acknowledged: {{ event_to_move.id }} - {{ note }}"

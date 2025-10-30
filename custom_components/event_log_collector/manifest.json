@@ -1,0 +1,12 @@
+{
+  "domain": "event_log_collector",
+  "name": "EventLog Collector",
+  "codeowners": ["@Alvin366"],
+  "config_flow": false,
+  "documentation": "https://github.com/Alvin366/EventLog",
+  "requirements": [],
+  "version": "0.1.0",
+  "homeassistant": "2024.9.0",
+  "issue_tracker": "https://github.com/Alvin366/EventLog/issues",
+  "iot_class": "local_polling"
+}

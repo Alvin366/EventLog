@@ -1,0 +1,32 @@
+# EventLog Input Boolean Helpers
+# Configuration toggles and feature switches
+
+eventlog_enabled:
+  name: "EventLog Enabled"
+  icon: mdi:checkbox-marked-circle
+  initial: true
+
+eventlog_show_closed:
+  name: "Show Closed Events"
+  icon: mdi:file-document
+  initial: false
+
+eventlog_auto_archive:
+  name: "Auto Archive Old Events"
+  icon: mdi:archive-arrow-down
+  initial: true
+
+eventlog_enable_influxdb:
+  name: "Send Events to InfluxDB"
+  icon: mdi:database-export
+  initial: false
+
+eventlog_show_active_only:
+  name: "Show Active Events Only"
+  icon: mdi:filter-check
+  initial: true
+
+eventlog_enable_notifications:
+  name: "Enable Event Notifications"
+  icon: mdi:bell
+  initial: true

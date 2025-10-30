@@ -1,0 +1,107 @@
+log_event:
+  alias: "Log Event"
+  description: |
+    Add a new event to the EventLog. Call this script from automations
+    or services to log custom events.
+
+  mode: parallel
+
+  fields:
+    category:
+      name: "Category"
+      description: "Event category: critical, major, minor, warning, log"
+      required: true
+      selector:
+        select:
+          options:
+            - critical
+            - major
+            - minor
+            - warning
+            - log
+
+    source:
+      name: "Source"
+      description: "Event source (e.g., plant_monitor, battery, custom)"
+      required: true
+      selector:
+        text:
+
+    title:
+      name: "Title"
+      description: "Short event title"
+      required: true
+      selector:
+        text:
+
+    message:
+      name: "Message"
+      description: "Detailed event message"
+      required: true
+      selector:
+        text:
+
+    recommended_action:
+      name: "Recommended Action"
+      description: "What user should do to resolve"
+      required: false
+      selector:
+        text:
+
+    deduplication_key:
+      name: "Deduplication Key"
+      description: "Unique identifier for deduplication"
+      required: false
+      selector:
+        text:
+
+  sequence:
+    - variables:
+        category: "{{ category | default('log') }}"
+        source: "{{ source | default('custom') }}"
+        title: "{{ title }}"
+        message: "{{ message }}"
+        recommended_action: "{{ recommended_action | default('Monitor situation') }}"
+        dedup_key: "{{ deduplication_key | default(source ~ '_' ~ title | replace(' ', '_') | lower) }}"
+        timestamp: "{{ now().isoformat() }}"
+
+    # Fire event for the main event logger to catch
+    - service: system_log.write
+      data:
+        level: info
+        logger: event_log_collector
+        message: "Manual event logged: {{ title }} [{{ category }}]"
+
+    # Create event directly in helpers (alternative path for non-HA-core events)
+    - variables:
+        current_events: >-
+          {% set events = state_attr('input_text.eventlog_active_events', 'value') | default('[]') | from_json %}
+          {% if events is not iterable %}
+            []
+          {% else %}
+            {{ events }}
+          {% endif %}
+
+    - variables:
+        new_event:
+          id: "evt_{{ now().timestamp() | int }}_{{ range(1000, 9999) | random }}"
+          category: "{{ category }}"
+          source: "{{ source }}"
+          status: active
+          timestamp: "{{ timestamp }}"
+          first_occurrence: "{{ timestamp }}"
+          last_occurrence: "{{ timestamp }}"
+          occurrence_count: 1
+          title: "{{ title }}"
+          message: "{{ message }}"
+          recommended_action: "{{ recommended_action }}"
+          deduplication_key: "{{ dedup_key }}"
+
+    - variables:
+        updated_events: "{{ current_events + [new_event] }}"
+
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.eventlog_active_events
+      data:
+        value: "{{ updated_events | to_json }}"
