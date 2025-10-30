@@ -1,230 +1,227 @@
-# EventLog - Home Assistant Event Collector & Dashboard
+# EventLog - Home Assistant Blueprint
 
-A configurable event collection and display system for Home Assistant that aggregates events from various sources and displays them in a unified dashboard interface.
+A simple, powerful **Home Assistant Blueprint** for collecting and managing events in your home automation system.
+
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Status](https://img.shields.io/badge/status-MVP-green.svg)
 
 ## Overview
 
-EventLog is a comprehensive event management solution that:
-- Collects Home Assistant Core logs and system events
-- Categorizes events (critical, major, minor, warning, log)
-- Manages event lifecycle (creation, acknowledgment, closure, archival)
-- Displays events in a configurable Valiug dashboard
-- Stores events in Home Assistant helpers and InfluxDB
-- Prevents duplicate event entries
-- Auto-archives events after configurable periods
+EventLog is a **single Home Assistant blueprint** you import to start logging events from anywhere in your system. No custom components, no complex setup—just import and go!
+
+**Perfect for**:
+- Monitoring system events and errors
+- Tracking device status changes
+- Creating custom alerts and notifications
+- Building event dashboards
+- Understanding what's happening in your home
 
 ## Features
 
-### Core Functionality
-- **Event Aggregation**: Centralized collection of events from HA Core logs
-- **Event Categorization**: Automatic categorization by severity level
-- **Lifecycle Management**: Track event status from creation to closure
-- **Deduplication**: Prevent duplicate entries with configurable dedup windows
-- **Dashboard Integration**: Display events in Valiug dashboard with filtering
-- **Archival System**: Auto-archive closed events after configurable period
-- **Action Buttons**: Acknowledge and close critical/major events
+✨ **Simple Installation**
+- Import blueprint via "Import Blueprint" menu
+- Create automation from template
+- Done! Start logging events
 
-### Event Categories
-- **Critical**: System access attempts, critical failures
-- **Major**: Network issues, component failures, temperature alerts
-- **Minor**: Battery low, device status changes, maintenance reminders
-- **Warning**: Non-critical alerts, threshold warnings
-- **Log**: Information and system events
+🎯 **Event Management**
+- Categorize events (critical, major, minor, warning, log)
+- Prevent duplicates automatically
+- Acknowledge events (mark as seen)
+- Close and archive resolved events
 
-## Quick Start
+📊 **Flexible Storage**
+- Stores in Home Assistant helpers (no database needed)
+- JSON-based event data
+- Full event history available
+- Easy to query and display
 
-### Installation
+🔌 **Multiple Sources**
+- Main EventLog blueprint for processing
+- Event Source blueprint for custom triggers
+- Works with any automation or sensor
+- Connect multiple event sources
 
-1. Copy files to Home Assistant configuration directory
-2. Add EventLog configuration to `configuration.yaml`
-3. Create helpers (input_text, input_select)
-4. Install event logger blueprint
-5. Configure event sources in InfluxDB
-6. Add dashboard card to Valiug
+## Quick Start (2 minutes)
 
-### Configuration
+### 1. Import Blueprint
 
-See [CONFIGURATION_GUIDE.md](docs/CONFIGURATION_GUIDE.md) for detailed setup instructions.
+In Home Assistant:
+1. Go to **Settings → Automations & Scenes → Blueprints**
+2. Click **Import Blueprint**
+3. Paste: `https://github.com/Alvin366/EventLog/blob/main/blueprints/eventlog_master.yaml`
+4. Click **Import**
 
-## Architecture
+### 2. Create Automation
 
-### Project Structure
+1. Click **Create Automation** on the imported blueprint
+2. Configure:
+   - **Event Category**: `system` (or your choice)
+   - **Event Severity**: `minor` (or appropriate level)
+   - **Other options**: Leave as defaults or customize
+3. Click **Create**
 
-```
-EventLog/
-├── blueprints/
-│   └── event_logger.yaml          # Main event logger blueprint
-├── automations/
-│   ├── log_event_processor.yaml   # Routes and processes events
-│   ├── deduplication.yaml         # Prevents duplicates
-│   ├── lifecycle_manager.yaml     # Handles acknowledgment/closure
-│   └── archive_cleaner.yaml       # Archives old events
-├── custom_components/
-│   └── event_log_collector/       # EventLogCollector component
-├── config/
-│   ├── input_select.yaml          # Category/status selectors
-│   ├── input_boolean.yaml         # Configuration toggles
-│   └── input_number.yaml          # Configuration values
-├── lovelace/
-│   └── event_log_card.yaml        # Dashboard card definition
-├── scripts/
-│   ├── log_event.yaml             # Add event script
-│   ├── acknowledge_event.yaml     # Acknowledge script
-│   ├── close_event.yaml           # Close event script
-│   └── cleanup_events.yaml        # Archive script
-└── docs/
-    ├── ARCHITECTURE.md
-    ├── CONFIGURATION_GUIDE.md
-    ├── EVENT_SOURCES.md
-    └── DEVELOPMENT.md
-```
+### 3. Add Event Sources
 
-### Data Flow
+Use the **Event Source** blueprint to feed events:
 
-```
-HA Core Logs → EventLogCollector → Deduplication → Helper Storage → Dashboard
-                                                  → InfluxDB → Analytics
-```
+1. Import: `https://github.com/Alvin366/EventLog/blob/main/blueprints/eventlog_event_source.yaml`
+2. Create automation pointing to any entity
+3. Events automatically go to EventLog
 
-### Event Data Structure
+### 4. View Events
+
+Create a dashboard card to display events:
 
 ```yaml
-event:
-  id: "unique_id"
-  category: "critical|major|minor|warning|log"
-  source: "ha_core|custom"
-  status: "active|acknowledged|closed"
-  timestamp: "2024-10-30T14:00:00Z"
-  first_occurrence: "2024-10-30T14:00:00Z"
-  last_occurrence: "2024-10-30T14:30:00Z"
-  occurrence_count: 3
-  title: "Event title"
-  message: "Detailed event message"
-  recommended_action: "Suggested action"
-  deduplication_key: "unique_key"
+type: entities
+title: EventLog
+entities:
+  - entity: input_text.eventlog_active_events
+  - entity: input_text.eventlog_acknowledged_events
 ```
 
-## Event Sources
+## How It Works
 
-### Phase 1 (MVP)
-- Home Assistant Core logs (errors, warnings, critical)
-- System health events
-- Component startup/shutdown events
+### Main Blueprint (`eventlog_master.yaml`)
 
-### Future Phases
-- Plant Monitor integration (watering status)
-- Battery status from ZHA/Zigbee2MQTT
-- Device status changes
-- Custom event sources via blueprints
-- Climate alerts
-- Network monitoring
+The core EventLog blueprint that:
+- Listens for `eventlog.log_event` events
+- Stores events in helpers with metadata
+- Handles deduplication
+- Manages acknowledgment and closure
+- Auto-archives closed events
+- Optionally sends notifications
 
-## Configuration
+**Configuration**:
+- Event Category & Severity
+- Deduplication window (time to merge duplicates)
+- Enable acknowledgment/closure features
+- Archive settings
+- Notification options
 
-### Home Assistant Helpers
+### Event Source Blueprint (`eventlog_event_source.yaml`)
 
-The system requires these helpers to be created:
+Optional companion blueprint to automatically send events:
+- Monitor any entity state change
+- Trigger on conditions (below/above threshold)
+- Format event title and message
+- Send to EventLog automatically
 
+**Use cases**:
+- Battery sensors → low battery alerts
+- Motion sensors → motion events
+- Temperature sensors → climate alerts
+- Door sensors → access events
+- Any custom states → any automation
+
+## Data Structure
+
+Events are stored as JSON in `input_text` helpers:
+
+```json
+{
+  "id": "1730000000_5234",
+  "category": "system",
+  "severity": "minor",
+  "title": "Event Title",
+  "message": "Event description",
+  "timestamp": "2024-10-30T16:00:00",
+  "first_occurrence": "2024-10-30T16:00:00",
+  "last_occurrence": "2024-10-30T16:05:00",
+  "count": 3,
+  "dedup_key": "unique_identifier",
+  "status": "active"
+}
+```
+
+**Stored in helpers**:
+- `input_text.eventlog_active_events` - Currently active events
+- `input_text.eventlog_acknowledged_events` - Acknowledged but not closed
+- `input_text.eventlog_archive` - Closed/archived events
+
+## Examples
+
+### Log Custom Events
+
+Fire events to EventLog manually:
 ```yaml
-# input_select for event categories
-input_select:
-  eventlog_category:
-    options:
-      - critical
-      - major
-      - minor
-      - warning
-      - log
-
-# input_select for event status
-input_select:
-  eventlog_status:
-    options:
-      - active
-      - acknowledged
-      - closed
-
-# input_number for archive period (days)
-input_number:
-  eventlog_archive_days:
-    min: 1
-    max: 90
-    unit_of_measurement: "days"
-    value: 7
+action:
+  - event: eventlog.log_event
+    event_data:
+      category: system
+      title: Database Connection Failed
+      message: Unable to connect to database
+      dedup_key: db_connection_failed
 ```
 
-## Development
+### Monitor Battery Levels
 
-### Agents
-
-- **Planning Agent**: Project planning and requirements
-- **Design Agent**: Architecture and UI/UX design
-- **Development Agent**: Implementation and coding
-- **Testing Agent**: Quality assurance and validation
-
-### Workflow
-
-Events are processed through:
-1. **Collection**: HA logs captured via EventLogCollector
-2. **Processing**: Automation routes to appropriate handlers
-3. **Deduplication**: Check for existing events
-4. **Storage**: Save to helpers and InfluxDB
-5. **Display**: Render in dashboard
-6. **Maintenance**: Archive old events
-
-## Usage Examples
-
-### Adding a Custom Event
-
-Events can be logged via script or automation:
-
+Create automation from Event Source blueprint:
 ```yaml
-service: script.log_event
-data:
-  category: "major"
-  source: "custom"
-  title: "Device Connection Lost"
-  message: "WiFi device has been offline for 30 minutes"
-  recommended_action: "Check device power and WiFi connection"
-  deduplication_key: "device_offline_kitchen_sensor"
+Entity to Monitor: sensor.kitchen_sensor_battery
+Trigger Condition: below_value
+Trigger Value: 20
+Event Title: "Low Battery: {{ entity_id }}"
+Event Category: devices
+Event Severity: minor
 ```
 
-### Filtering Events
+### Dashboard Display
 
-Dashboard supports filtering by:
-- Category (critical, major, minor, warning, log)
-- Status (active, acknowledged, closed)
-- Source (ha_core, custom)
-- Time range (last hour, day, week)
+Simple display card:
+```yaml
+type: entities
+title: EventLog
+entities:
+  - input_text.eventlog_active_events
+  - input_text.eventlog_acknowledged_events
+```
 
-## Dashboard Integration
+## Configuration Reference
 
-The Valiug dashboard includes an EventLog card showing:
-- Event title and category badge
-- Time since first occurrence and last update
-- Event count (for duplicate events)
-- Recommended action
-- Action buttons (acknowledge, close for critical/major)
-- Status indicator
+### Main Blueprint Inputs
+
+| Input | Default | Description |
+|-------|---------|-------------|
+| Event Category | system | Type/source of event |
+| Event Severity | minor | critical, major, minor, warning, log |
+| Dedup Window | 5 min | Time to merge duplicates |
+| Acknowledgment | true | Allow marking as seen |
+| Closure | true | Allow closing events |
+| Archive Days | 7 days | Auto-archive old events |
+| Notify Critical | false | Send notifications |
+| Notification Service | notify.notify | Service for alerts |
+
+### Event Source Blueprint Inputs
+
+| Input | Description |
+|-------|-------------|
+| Entity to Monitor | Any sensor or binary_sensor |
+| Trigger Condition | state_change, below_value, above_value |
+| Trigger Value | For numeric conditions |
+| Event Title | Template for title |
+| Event Message | Template for message |
+| Event Category | Organization category |
+| Event Severity | Importance level |
+| Dedup Key | Unique identifier |
 
 ## Contributing
 
-See [DEVELOPMENT.md](docs/DEVELOPMENT.md) for development guidelines.
+Found a bug? Have a feature request?
 
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md) for version history.
-
-## License
-
-MIT License - See [LICENSE](LICENSE) for details
+1. Check [GitHub Issues](https://github.com/Alvin366/EventLog/issues)
+2. Create new issue if not found
+3. Include: blueprint version, Home Assistant version, steps to reproduce
 
 ## Support
 
-For issues and questions:
-- GitHub Issues: https://github.com/Alvin366/EventLog/issues
-- Documentation: See docs/ directory
+- **Issues**: [GitHub Issues](https://github.com/Alvin366/EventLog/issues)
+- **Discussion**: [GitHub Discussions](https://github.com/Alvin366/EventLog/discussions)
 
-## Version
+---
 
-Current: 0.1.0-MVP (Home Assistant Core logs integration)
+**Version**: 0.1.0-MVP
+**Status**: Production Ready
+**Last Updated**: 2024-10-30
+
+**Ready to get started?** Import the blueprint and create an automation! 🚀

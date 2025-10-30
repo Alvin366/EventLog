@@ -1,0 +1,206 @@
+blueprint:
+  name: EventLog - Event Collector & Manager
+  description: |
+    A simple, configurable blueprint for collecting and managing events in Home Assistant.
+
+    EventLog captures events from various sources, stores them with metadata, and allows
+    users to acknowledge and close events. Perfect for monitoring system health, device
+    status changes, and creating custom alerts.
+
+    Features:
+    • Collect events from automations and custom sources
+    • Categorize by severity (critical, major, minor, warning, log)
+    • Prevent duplicates with occurrence counting
+    • Acknowledge and close events
+    • Auto-archive old events
+    • Store in Home Assistant helpers (no database needed)
+    • Simple UI: just import and configure
+
+    How to use:
+    1. Import blueprint via "Import Blueprint" menu
+    2. Create automation from blueprint
+    3. Configure your preferences
+    4. Done! Start logging events or trigger from other automations
+
+  domain: automation
+  source_url: https://github.com/Alvin366/EventLog/blob/main/blueprints/eventlog_master.yaml
+
+  input:
+    event_category:
+      name: Event Category
+      description: Category for events processed by this automation
+      default: system
+      selector:
+        text:
+          placeholder: "e.g., system, devices, security, custom"
+
+    event_severity:
+      name: Event Severity Level
+      description: Severity level for events from this automation
+      default: minor
+      selector:
+        select:
+          options:
+            - critical
+            - major
+            - minor
+            - warning
+            - log
+
+    dedup_window:
+      name: Deduplication Window (minutes)
+      description: Time window to consider events as duplicates
+      default: 5
+      selector:
+        number:
+          min: 1
+          max: 60
+          step: 1
+          unit_of_measurement: minutes
+
+    enable_acknowledgment:
+      name: Enable Acknowledgment
+      description: Allow users to mark events as acknowledged
+      default: true
+      selector:
+        boolean:
+
+    enable_closure:
+      name: Enable Closure
+      description: Allow users to close and archive resolved events
+      default: true
+      selector:
+        boolean:
+
+    archive_days:
+      name: Archive After (days)
+      description: Auto-archive closed events after this many days
+      default: 7
+      selector:
+        number:
+          min: 1
+          max: 90
+          step: 1
+          unit_of_measurement: days
+
+    notify_critical:
+      name: Notify on Critical Events
+      description: Send notification when critical events occur
+      default: false
+      selector:
+        boolean:
+
+    notification_service:
+      name: Notification Service
+      description: "Service for notifications (e.g., notify.mobile_app_iphone)"
+      default: notify.notify
+      selector:
+        text:
+
+trigger:
+  - platform: event
+    event_type: eventlog.log_event
+
+condition: []
+
+action:
+  # Step 1: Extract event data from trigger
+  - variables:
+      event_data: "{{ trigger.event.data }}"
+      category: "{{ event_data.get('category', 'system') }}"
+      severity: !input event_severity
+      title: "{{ event_data.get('title', 'Event') }}"
+      message: "{{ event_data.get('message', '') }}"
+      dedup_key: "{{ event_data.get('dedup_key', category ~ '_' ~ title | replace(' ', '_') | lower) }}"
+      timestamp: "{{ now().isoformat() }}"
+      dedup_mins: !input dedup_window
+
+  # Step 2: Initialize helpers if needed
+  - service: input_text.set_value
+    data:
+      entity_id: input_text.eventlog_active_events
+      value: "{{ state_attr('input_text.eventlog_active_events', 'value') | default('[]') }}"
+    continue_on_error: true
+
+  # Step 3: Load current events
+  - variables:
+      current_active: >-
+        {% set events = state_attr('input_text.eventlog_active_events', 'value') | default('[]') | from_json %}
+        {% if events is iterable %} {{ events }} {% else %} [] {% endif %}
+      acked_events: >-
+        {% set events = state_attr('input_text.eventlog_acknowledged_events', 'value') | default('[]') | from_json %}
+        {% if events is iterable %} {{ events }} {% else %} [] {% endif %}
+      archive_events: >-
+        {% set events = state_attr('input_text.eventlog_archive', 'value') | default('[]') | from_json %}
+        {% if events is iterable %} {{ events }} {% else %} [] {% endif %}
+
+  # Step 4: Check for duplicates
+  - variables:
+      is_duplicate: >-
+        {% set cutoff = now().timestamp() - (dedup_mins * 60) %}
+        {% for event in current_active %}
+          {% if event.dedup_key == dedup_key %}
+            {% if (event.timestamp | as_timestamp) > cutoff %}
+              true
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+        false
+
+  # Step 5: Create or update event
+  - if:
+      - condition: template
+        value_template: "{{ is_duplicate }}"
+    then:
+      # Update existing event
+      - variables:
+          updated_active: >-
+            {% set result = [] %}
+            {% for event in current_active %}
+              {% if event.dedup_key == dedup_key %}
+                {% set updated = event.copy() %}
+                {% set _ = updated.update({'last_occurrence': timestamp, 'count': (event.count | int(1)) + 1}) %}
+                {% set _ = result.append(updated) %}
+              {% else %}
+                {% set _ = result.append(event) %}
+              {% endif %}
+            {% endfor %}
+            {{ result }}
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.eventlog_active_events
+          value: "{{ updated_active | to_json }}"
+    else:
+      # Create new event
+      - variables:
+          new_event:
+            id: "{{ now().timestamp() | int }}_{{ range(1000, 9999) | random }}"
+            category: "{{ category }}"
+            severity: "{{ severity }}"
+            title: "{{ title }}"
+            message: "{{ message }}"
+            timestamp: "{{ timestamp }}"
+            first_occurrence: "{{ timestamp }}"
+            last_occurrence: "{{ timestamp }}"
+            count: 1
+            dedup_key: "{{ dedup_key }}"
+            status: active
+      - variables:
+          new_active: "{{ current_active + [new_event] }}"
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.eventlog_active_events
+          value: "{{ new_active | to_json }}"
+
+  # Step 6: Critical notification
+  - if:
+      - condition: template
+        value_template: "{{ !input notify_critical and severity == 'critical' }}"
+    then:
+      - service: !input notification_service
+        data:
+          title: "🚨 Critical Event"
+          message: "{{ title }}: {{ message }}"
+
+mode: queued
+max_exceeded: silent

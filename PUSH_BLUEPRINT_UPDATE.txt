@@ -1,0 +1,125 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                ║
+║              EVENTLOG BLUEPRINT - PUSH UPDATE TO GITHUB                        ║
+║                                                                                ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+EventLog has been redesigned as a Home Assistant Blueprint!
+This update needs to be pushed to GitHub to replace the old version.
+
+═══════════════════════════════════════════════════════════════════════════════════
+
+WHAT CHANGED:
+
+REMOVED (old approach):
+  ✗ custom_components/ directory
+  ✗ automations/ directory
+  ✗ scripts/ directory
+  ✗ config/ directory
+  ✗ lovelace/ directory
+  ✗ docs/ directory (old docs)
+  ✗ All deployment/push/documentation files from old approach
+
+ADDED (new approach):
+  ✓ blueprints/eventlog_master.yaml (main blueprint)
+  ✓ blueprints/eventlog_event_source.yaml (companion blueprint)
+  ✓ Updated README.md (for blueprint installation)
+
+═══════════════════════════════════════════════════════════════════════════════════
+
+GIT PUSH COMMANDS:
+
+Copy and paste these commands in order:
+
+Step 1: Navigate to project
+───────────────────────────────────────────────────────────────────────────────
+cd /config/ClaudeProjects/EventLog
+
+Step 2: Check git status
+───────────────────────────────────────────────────────────────────────────────
+git status
+
+(Should show many files deleted and some modified/new)
+
+Step 3: Stage all changes
+───────────────────────────────────────────────────────────────────────────────
+git add -A
+
+Step 4: Create commit with message
+───────────────────────────────────────────────────────────────────────────────
+git commit -m "refactor: Redesign EventLog as single Home Assistant Blueprint
+
+- Remove custom component approach (EventLogCollector)
+- Remove helper/script/automation files (no longer needed)
+- Create eventlog_master.yaml - Main event listener & storage blueprint
+- Create eventlog_event_source.yaml - Companion blueprint for entity monitoring
+- Update README.md for blueprint installation and usage
+- Blueprint auto-creates helpers for event storage
+- Users can import via 'Import Blueprint' menu in HA UI
+- Configurable deduplication, acknowledgment, closure, archival
+- Optional notifications for critical events
+- Zero custom components, zero file copying needed
+
+Benefits:
+✅ 2-minute installation via HA UI
+✅ No YAML editing required
+✅ Works with any event source
+✅ Flexible and extensible
+
+Version: 0.2.0-Blueprint-MVP
+
+🤖 Generated with Claude Code
+Co-Authored-By: Claude <noreply@anthropic.com>"
+
+Step 5: Push to GitHub
+───────────────────────────────────────────────────────────────────────────────
+git push origin main
+
+When prompted for credentials:
+  Username: Alvin366
+  Password: [Your GitHub Personal Access Token]
+
+Step 6: Verify push
+───────────────────────────────────────────────────────────────────────────────
+git log -1 --oneline
+git status
+
+═══════════════════════════════════════════════════════════════════════════════════
+
+VERIFICATION:
+
+After push, check GitHub:
+  https://github.com/Alvin366/EventLog
+
+You should see:
+  ✓ blueprints/ directory with 2 YAML files
+  ✓ Updated README.md
+  ✓ Commit message shows redesign
+  ✓ Old directories removed
+  ✓ ~200 files changed (mostly deletions + new content)
+
+═══════════════════════════════════════════════════════════════════════════════════
+
+WHAT HAPPENS NEXT:
+
+After GitHub update is complete:
+
+1. INSTALL EventLog Blueprint in Home Assistant
+   → Settings → Automations & Scenes → Blueprints → Import Blueprint
+   → Paste: https://github.com/Alvin366/EventLog/blob/main/blueprints/eventlog_master.yaml
+
+2. CREATE AUTOMATION from blueprint
+   → Select blueprint and click "Create Automation"
+   → Configure settings and save
+
+3. TEST basic functionality
+   → Fire test event
+   → Check helpers created
+   → Verify event stored
+   → Test acknowledgment/closure
+
+═══════════════════════════════════════════════════════════════════════════════════
+
+Ready? Execute the 6 steps above!
+
+═══════════════════════════════════════════════════════════════════════════════════
