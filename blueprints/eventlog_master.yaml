@@ -93,6 +93,8 @@ action:
       dedup_key: "{{ event_data.get('dedup_key', category ~ '_' ~ title | replace(' ', '_') | lower) }}"
       timestamp: "{{ now().isoformat() }}"
       dedup_mins: !input dedup_window
+      notify_critical_enabled: !input notify_critical
+      notification_svc: !input notification_service
 
   - service: input_text.set_value
     data:
@@ -161,9 +163,9 @@ action:
 
   - if:
       - condition: template
-        value_template: "{{ !input notify_critical and severity == 'critical' }}"
+        value_template: "{{ notify_critical_enabled and severity == 'critical' }}"
     then:
-      - service: !input notification_service
+      - service: "{{ notification_svc }}"
         data:
           title: "🚨 Critical Event"
           message: "{{ title }}: {{ message }}"
