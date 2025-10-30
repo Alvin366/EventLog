@@ -32,7 +32,6 @@ blueprint:
       default: system
       selector:
         text:
-          placeholder: "e.g., system, devices, security, custom"
 
     event_severity:
       name: Event Severity Level
@@ -92,7 +91,7 @@ blueprint:
 
     notification_service:
       name: Notification Service
-      description: "Service for notifications (e.g., notify.mobile_app_iphone)"
+      description: Service for notifications (e.g., notify.mobile_app_iphone)
       default: notify.notify
       selector:
         text:
@@ -104,7 +103,6 @@ trigger:
 condition: []
 
 action:
-  # Step 1: Extract event data from trigger
   - variables:
       event_data: "{{ trigger.event.data }}"
       category: "{{ event_data.get('category', 'system') }}"
@@ -115,14 +113,12 @@ action:
       timestamp: "{{ now().isoformat() }}"
       dedup_mins: !input dedup_window
 
-  # Step 2: Initialize helpers if needed
   - service: input_text.set_value
     data:
       entity_id: input_text.eventlog_active_events
       value: "{{ state_attr('input_text.eventlog_active_events', 'value') | default('[]') }}"
     continue_on_error: true
 
-  # Step 3: Load current events
   - variables:
       current_active: >-
         {% set events = state_attr('input_text.eventlog_active_events', 'value') | default('[]') | from_json %}
@@ -134,7 +130,6 @@ action:
         {% set events = state_attr('input_text.eventlog_archive', 'value') | default('[]') | from_json %}
         {% if events is iterable %} {{ events }} {% else %} [] {% endif %}
 
-  # Step 4: Check for duplicates
   - variables:
       is_duplicate: >-
         {% set cutoff = now().timestamp() - (dedup_mins * 60) %}
@@ -147,12 +142,10 @@ action:
         {% endfor %}
         false
 
-  # Step 5: Create or update event
   - if:
       - condition: template
         value_template: "{{ is_duplicate }}"
     then:
-      # Update existing event
       - variables:
           updated_active: >-
             {% set result = [] %}
@@ -171,7 +164,6 @@ action:
           entity_id: input_text.eventlog_active_events
           value: "{{ updated_active | to_json }}"
     else:
-      # Create new event
       - variables:
           new_event:
             id: "{{ now().timestamp() | int }}_{{ range(1000, 9999) | random }}"
@@ -192,7 +184,6 @@ action:
           entity_id: input_text.eventlog_active_events
           value: "{{ new_active | to_json }}"
 
-  # Step 6: Critical notification
   - if:
       - condition: template
         value_template: "{{ !input notify_critical and severity == 'critical' }}"
