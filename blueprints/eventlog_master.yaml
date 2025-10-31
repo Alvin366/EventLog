@@ -1,6 +1,14 @@
 blueprint:
   name: EventLog - Event Collector & Manager
-  description: Home Assistant blueprint for collecting and managing events with deduplication, acknowledgment, and archival.
+  description: |
+    Home Assistant blueprint for collecting and managing events with deduplication, acknowledgment, and archival.
+
+    IMPORTANT: Before creating an automation from this blueprint, you MUST create three text helpers:
+    1. eventlog_active_events (initial value: [])
+    2. eventlog_acknowledged_events (initial value: [])
+    3. eventlog_archive (initial value: [])
+
+    See Setup Instructions in README for details.
   domain: automation
   source_url: https://github.com/Alvin366/EventLog/blob/main/blueprints/eventlog_master.yaml
 
@@ -78,17 +86,15 @@ action:
       dedup_key: "{{ event_data.get('dedup_key', category ~ '_' ~ title | replace(' ', '_') | lower) }}"
       timestamp: "{{ now().isoformat() }}"
       dedup_mins: !input dedup_window
+      helper_exists: "{{ states('input_text.eventlog_active_events') != 'unavailable' }}"
 
-  - service: input_text.set_value
-    data:
-      entity_id: input_text.eventlog_active_events
-      value: "{{ state_attr('input_text.eventlog_active_events', 'value') | default('[]') }}"
-    continue_on_error: true
+  - condition: template
+    value_template: "{{ helper_exists }}"
 
   - variables:
       current_active: >-
-        {% set events = state_attr('input_text.eventlog_active_events', 'value') | default('[]') | from_json %}
-        {% if events is iterable %} {{ events }} {% else %} [] {% endif %}
+        {% set events = state('input_text.eventlog_active_events') | default('[]') | from_json %}
+        {% if events is iterable and events != none %} {{ events }} {% else %} [] {% endif %}
 
   - variables:
       is_duplicate: >-
