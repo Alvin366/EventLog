@@ -83,14 +83,13 @@ action:
       dedup_key: "{{ event_data.get('dedup_key', category ~ '_' ~ title | replace(' ', '_') | lower) }}"
       timestamp: "{{ now().isoformat() }}"
       dedup_mins: !input dedup_window
-      helper_exists: "{{ states('input_text.eventlog_active_events') != 'unavailable' }}"
 
   - condition: template
-    value_template: "{{ helper_exists }}"
+    value_template: "{{ states('input_text.eventlog_active_events') != 'unavailable' }}"
 
   - variables:
       current_active: >-
-        {% set events = state('input_text.eventlog_active_events') | default('[]') | from_json %}
+        {% set events = state_attr('input_text.eventlog_active_events', 'value') | default('[]') | from_json %}
         {% if events is iterable and events != none %} {{ events }} {% else %} [] {% endif %}
 
   - variables:
