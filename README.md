@@ -1,13 +1,16 @@
-# EventLog - Home Assistant Blueprint
+# EventLog v2.0.0 - Home Assistant Event Collection System
 
-A simple, powerful **Home Assistant Blueprint** for collecting and managing events in your home automation system.
+A sophisticated **Custom Component** for Home Assistant that automatically monitors logs, tracks events, and stores them in InfluxDB for querying and analysis.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Status](https://img.shields.io/badge/status-MVP-green.svg)
+![Status](https://img.shields.io/badge/status-v2.0.0--alpha-yellow.svg)
+![Version](https://img.shields.io/badge/version-2.0.0--alpha-blue.svg)
 
 ## Overview
 
-EventLog is a **single Home Assistant blueprint** you import to start logging events from anywhere in your system. No custom components, no complex setup—just import and go!
+EventLog v2 is a **complete redesign** from the MVP blueprint approach. Instead of storing JSON in helpers, we now use a **Custom Component** with **InfluxDB backend** for reliable, scalable event storage and querying.
+
+**Key Improvement**: Move from impractical helper-based storage to proper time-series database (InfluxDB)
 
 **Perfect for**:
 - Monitoring system events and errors
@@ -18,96 +21,91 @@ EventLog is a **single Home Assistant blueprint** you import to start logging ev
 
 ## Features
 
-✨ **Simple Installation**
-- Import blueprint via "Import Blueprint" menu
-- Create automation from template
-- Done! Start logging events
+✨ **Automatic Log Monitoring**
+- Continuously watches `/config/home-assistant.log`
+- Captures ERROR, WARNING, CRITICAL events automatically
+- No manual setup required
+- Runs in background (async)
 
-🎯 **Event Management**
-- Categorize events (critical, major, minor, warning, log)
-- Prevent duplicates automatically
-- Acknowledge events (mark as seen)
-- Close and archive resolved events
+🎯 **Intelligent Event Processing**
+- Auto-categorizes and enriches events
+- Maps severity (ERROR→major, WARNING→warning)
+- Automatic deduplication (5-minute window)
+- Creates event timeline with first/last occurrence
 
-📊 **Flexible Storage**
-- Stores in Home Assistant helpers (no database needed)
-- JSON-based event data
-- Full event history available
-- Easy to query and display
+📊 **InfluxDB Storage**
+- Time-series database designed for event data
+- Queryable via SQL
+- Scalable to millions of events
+- Indexed for fast filtering
+- Retention policies for auto-cleanup
 
-🔌 **Multiple Sources**
-- Main EventLog blueprint for processing
-- Event Source blueprint for custom triggers
-- Works with any automation or sensor
-- Connect multiple event sources
+🔌 **Service API**
+- `eventlog.log_event` - Manually fire custom events
+- `eventlog.query_events` - Query events from InfluxDB
+- `eventlog.acknowledge_event` - Mark as seen
+- `eventlog.close_event` - Archive resolved events
 
-## Quick Start (5 minutes)
+## Quick Start (30 minutes)
 
-### Step 1: Create Text Helpers (2 minutes)
+### Step 1: Verify InfluxDB Configuration (5 min)
 
-Before importing the blueprint, create three text helpers to store events:
-
-1. Go to **Settings → Devices & Services → Helpers**
-2. Click **"Create Helper" → "Text"**
-
-**Create Helper 1**:
-- **Name**: EventLog Active Events
-- **Entity ID**: `eventlog_active_events`
-- **Max length**: 2048
-- **Initial value**: `[]`
-- Click **"Create"**
-
-**Create Helper 2**:
-- **Name**: EventLog Acknowledged Events
-- **Entity ID**: `eventlog_acknowledged_events`
-- **Max length**: 2048
-- **Initial value**: `[]`
-- Click **"Create"**
-
-**Create Helper 3**:
-- **Name**: EventLog Archive
-- **Entity ID**: `eventlog_archive`
-- **Max length**: 2048
-- **Initial value**: `[]`
-- Click **"Create"**
-
-### Step 2: Import Blueprint (1 minute)
-
-1. Go to **Settings → Automations & Scenes → Blueprints**
-2. Click **Import Blueprint**
-3. Paste: `https://raw.githubusercontent.com/Alvin366/EventLog/main/blueprints/eventlog_master.yaml`
-4. Click **Import**
-
-### Step 3: Create Automation (1 minute)
-
-1. Click **Create Automation** on the imported blueprint
-2. Configure with defaults or customize:
-   - **Event Category**: `system`
-   - **Event Severity**: `minor`
-   - **Dedup Window**: 5 (minutes)
-   - **Other options**: Leave as defaults or customize
-3. Click **Create**
-
-### Step 4: View Events (1 minute)
-
-Create a dashboard card to display events:
+Make sure InfluxDB is configured in Home Assistant:
 
 ```yaml
-type: entities
-title: EventLog
-entities:
-  - entity: input_text.eventlog_active_events
-  - entity: input_text.eventlog_acknowledged_events
-  - entity: input_text.eventlog_archive
+# configuration.yaml
+influxdb:
+  host: localhost
+  port: 8086
+  database: homeassistant
+  username: homeassistant
+  password: your_password
 ```
 
-### Step 5 (Optional): Add Event Sources
+### Step 2: Component Already Installed (5 min)
 
-Use the **Event Source** blueprint to automatically feed events:
+The EventLog component is located at:
+```
+/config/custom_components/eventlog/
+```
 
-1. Import: `https://raw.githubusercontent.com/Alvin366/EventLog/main/blueprints/eventlog_event_source.yaml`
-2. Create automation pointing to any entity
-3. Events automatically go to EventLog
+Files:
+- ✅ `__init__.py` - Main component
+- ✅ `manifest.json` - Metadata
+- ✅ `services.yaml` - Service definitions
+- ✅ `README.md` - Documentation
+
+### Step 3: Restart Home Assistant (10 min)
+
+1. Go to **Settings → System → Restart Home Assistant**
+2. Wait 2-3 minutes for restart to complete
+3. Check logs for startup messages
+
+### Step 4: Verify Component Loaded (5 min)
+
+1. Go to **Settings → System → Logs**
+2. Look for:
+```
+EventLog v2.0.0-alpha starting - monitoring /config/home-assistant.log
+EventLog component setup complete
+Registered service: eventlog.log_event
+```
+
+### Step 5: Test with Sample Event (5 min)
+
+1. Go to **Developer Tools → Services**
+2. Select **eventlog: Log Event**
+3. Enter:
+```yaml
+category: test
+severity: warning
+title: "Test Event"
+message: "Testing EventLog v2"
+dedup_key: "test_001"
+```
+4. Click **"Call Service"**
+
+**For Detailed Testing Guide**: See `V2_READY_FOR_TESTING.md`
 
 ## How It Works
 

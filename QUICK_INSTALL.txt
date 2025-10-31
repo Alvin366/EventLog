@@ -1,0 +1,65 @@
+╔══════════════════════════════════════════════════════════════════╗
+║                   EVENTLOG v2 - QUICK INSTALL                    ║
+║                     5 Minutes to Install                         ║
+╚══════════════════════════════════════════════════════════════════╝
+
+COPY & PASTE THESE COMMANDS:
+
+Step 1: Navigate to custom components
+    cd /config/custom_components
+
+Step 2: Clone from GitHub
+    git clone https://github.com/Alvin366/EventLog.git temp-repo
+
+Step 3: Copy component files
+    cp -r temp-repo/custom_components/eventlog .
+    rm -rf temp-repo
+
+Step 4: Verify installation
+    ls -la eventlog/
+    (should show 4 files)
+
+Step 5: Restart Home Assistant (via UI)
+    Settings > System > Restart Home Assistant
+    Wait 2-3 minutes
+
+Step 6: Check logs (via UI)
+    Settings > System > Logs
+    Search for: "EventLog v2.0.0-alpha starting"
+
+✅ DONE! Component installed and running.
+
+═══════════════════════════════════════════════════════════════════
+
+WHAT JUST HAPPENED:
+
+  You installed EventLog v2 custom component which:
+  ✅ Monitors /config/home-assistant.log automatically
+  ✅ Captures ERROR/WARNING/CRITICAL events
+  ✅ Stores events in InfluxDB
+  ✅ Provides 4 services for querying events
+  ✅ Runs in background (no setup needed)
+
+═══════════════════════════════════════════════════════════════════
+
+NEXT: Test the Component
+
+  Follow V2_READY_FOR_TESTING.md (5 simple tests, 30 minutes)
+
+═══════════════════════════════════════════════════════════════════
+
+DOCUMENTATION:
+
+  START_HERE.md - Overview & links
+  INSTALL_NOW.md - Detailed step-by-step
+  V2_READY_FOR_TESTING.md - Testing guide
+  IMPLEMENTATION_V2.md - Technical details
+  HOW_CUSTOM_COMPONENTS_WORK.md - How it works
+
+═══════════════════════════════════════════════════════════════════
+
+Questions? See the documentation files above.
+
+GitHub: https://github.com/Alvin366/EventLog
+
+═══════════════════════════════════════════════════════════════════

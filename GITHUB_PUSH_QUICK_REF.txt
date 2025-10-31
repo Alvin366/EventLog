@@ -1,0 +1,193 @@
+╔══════════════════════════════════════════════════════════════════╗
+║         EVENTLOG v2 - GITHUB PUSH QUICK REFERENCE CARD           ║
+║                                                                  ║
+║              Complete Procedure in 10 Simple Steps               ║
+╚══════════════════════════════════════════════════════════════════╝
+
+FULL DETAILS: See GITHUB_PUSH_MAIN_BRANCH.md
+
+═══════════════════════════════════════════════════════════════════
+
+STEP 1: Navigate to project
+$ cd /config/ClaudeProjects/EventLog
+
+STEP 2: Check status
+$ git status
+
+STEP 3: Create v2 branch
+$ git checkout -b v2-main
+
+STEP 4: Stage all changes
+$ git add -A
+
+STEP 5: Commit changes
+$ git commit -m "refactor: Redesign EventLog as custom component with InfluxDB"
+
+STEP 6: Push to GitHub
+$ git push -u origin v2-main
+
+STEP 7: Create Pull Request (on GitHub.com)
+- Go to: https://github.com/Alvin366/EventLog
+- Click: Compare & pull request
+- Base: main | Compare: v2-main
+- Create pull request
+
+STEP 8: Merge PR (on GitHub.com)
+- Click: Merge pull request
+- Confirm merge
+
+STEP 9: Create Release Tag
+$ git checkout main
+$ git pull origin main
+$ git tag -a v2.0.0-alpha -m "EventLog v2.0.0-alpha Release"
+$ git push origin v2.0.0-alpha
+
+STEP 10: Verify on GitHub
+- Check main branch has v2 files
+- Check Releases shows v2.0.0-alpha
+- Check custom_components/eventlog exists
+
+═══════════════════════════════════════════════════════════════════
+
+WHAT GETS PUSHED:
+
+✅ custom_components/eventlog/
+   ├── __init__.py (315 lines)
+   ├── manifest.json
+   ├── services.yaml
+   └── README.md
+
+✅ Documentation (14 files)
+   ├── START_HERE.md
+   ├── INSTALL_NOW.md
+   ├── V2_READY_FOR_TESTING.md
+   ├── IMPLEMENTATION_V2.md
+   └── ... (9 more)
+
+✅ docs/INFLUXDB_SCHEMA.md
+
+✅ LICENSE
+
+❌ REMOVED:
+   ├── blueprints/ (v1 files - gone)
+   ├── examples/ (v1 - gone)
+   └── Old documentation (gone)
+
+═══════════════════════════════════════════════════════════════════
+
+WHAT WAS UPDATED IN CLAUDE.MD:
+
+✅ Added EventLog v2 section
+✅ Installation instructions
+✅ 7-step rollback & cleanup procedure
+✅ Component cleanup commands
+✅ Troubleshooting guide
+✅ Documentation references
+✅ Lessons learned
+✅ Two-restart requirement (emphasized)
+
+═══════════════════════════════════════════════════════════════════
+
+KEY POINTS:
+
+1. Users MUST follow cleanup procedure first:
+   - Remove automations from Home Assistant UI
+   - Remove helpers from Home Assistant UI
+   - Remove blueprints from Home Assistant UI
+   - Remove old component directory
+   - Restart Home Assistant (first time)
+   - Then install fresh v2
+   - Restart Home Assistant (second time)
+
+2. Two restarts required:
+   - First restart: Clean out old references
+   - Second restart: Load new component
+
+3. All procedures documented:
+   - Installation: INSTALL_NOW.md
+   - Cleanup: CLAUDE.md (EventLog section)
+   - Testing: V2_READY_FOR_TESTING.md
+   - GitHub push: GITHUB_PUSH_MAIN_BRANCH.md (this file)
+
+═══════════════════════════════════════════════════════════════════
+
+QUICK CHECKLIST:
+
+✅ Read GITHUB_PUSH_MAIN_BRANCH.md (full details)
+✅ cd to EventLog directory
+✅ Create v2-main branch
+✅ Stage all changes (git add -A)
+✅ Commit with message
+✅ Push to GitHub
+✅ Create pull request on GitHub
+✅ Merge pull request
+✅ Create release tag
+✅ Verify on GitHub main branch
+
+═══════════════════════════════════════════════════════════════════
+
+VERIFICATION ON GITHUB:
+
+1. Main branch shows:
+   ✓ custom_components/eventlog/ with 4 files
+   ✓ Documentation files (14 markdown files)
+   ✓ docs/INFLUXDB_SCHEMA.md
+   ✓ LICENSE
+
+2. No old files visible:
+   ✓ No blueprints/ directory
+   ✓ No examples/ directory
+   ✓ No old MVP documentation
+
+3. Release tag created:
+   ✓ v2.0.0-alpha appears in Releases
+
+4. Latest commit shows redesign message
+
+═══════════════════════════════════════════════════════════════════
+
+INSTALLATION FOR USERS (After Push):
+
+1. Read: CLAUDE.md EventLog section
+2. Follow: 7-step cleanup procedure
+3. Follow: INSTALL_NOW.md
+4. Run tests: V2_READY_FOR_TESTING.md
+
+═══════════════════════════════════════════════════════════════════
+
+TROUBLESHOOTING:
+
+✓ If push fails: Check network and credentials
+✓ If PR won't merge: Check for conflicts (shouldn't be any)
+✓ If tag fails: Use git tag -f to force (shouldn't be needed)
+✓ If verification fails: Check files on GitHub manually
+
+═══════════════════════════════════════════════════════════════════
+
+COMPLETE REFERENCE:
+
+Full procedure: GITHUB_PUSH_MAIN_BRANCH.md (10+ pages)
+Installation: INSTALL_NOW.md
+Testing: V2_READY_FOR_TESTING.md
+System docs: CLAUDE.md (EventLog section)
+Project summary: FINAL_SUMMARY.md
+
+═══════════════════════════════════════════════════════════════════
+
+AFTER PUSH CONFIRMED:
+
+Users will:
+1. Clone: git clone https://github.com/Alvin366/EventLog.git
+2. Follow CLAUDE.md cleanup procedure (7 steps)
+3. Follow INSTALL_NOW.md (5 minutes)
+4. Follow V2_READY_FOR_TESTING.md (30 minutes)
+
+═══════════════════════════════════════════════════════════════════
+
+Status: Ready to Push
+Version: 2.0.0-alpha
+Date: 2024-10-31
+
+👉 Next: Execute the 10 steps above to push to GitHub main!
+
+═══════════════════════════════════════════════════════════════════
