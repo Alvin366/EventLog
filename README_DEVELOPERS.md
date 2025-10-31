@@ -212,6 +212,70 @@ Developer Tools → Services → manually trigger events
 - Troubleshooting section
 - Links to related docs
 
+## Deployment & Cache Management
+
+### Pushing Blueprint Updates to GitHub
+
+After making changes to blueprint files:
+
+```bash
+cd /config/ClaudeProjects/EventLog
+git add blueprints/eventlog_master.yaml
+git commit -m "fix: Description of changes"
+git push origin main
+```
+
+### IMPORTANT: Home Assistant Blueprint Caching
+
+Home Assistant caches blueprint definitions in the browser. After pushing new blueprint code to GitHub, you **MUST** clear the cache in Home Assistant before re-importing:
+
+**Step 1: Delete the Old Blueprint**
+- Settings → Automations & Scenes → Blueprints
+- Find the blueprint you modified
+- Click the three dots (⋯) menu
+- Click "Delete blueprint"
+- Confirm deletion
+
+**Step 2: Hard Refresh Browser Cache**
+- Press **Ctrl+Shift+Delete** (Windows) or **Cmd+Shift+Delete** (Mac)
+- OR press **Ctrl+Shift+R** / **Cmd+Shift+R** on the blueprints page
+
+**Step 3: Re-import with Raw GitHub URL**
+- Use the raw GitHub URL to bypass URL caching:
+  ```
+  https://raw.githubusercontent.com/Alvin366/EventLog/main/blueprints/eventlog_master.yaml
+  ```
+- NOT the regular GitHub web URL
+- Home Assistant will fetch the latest version
+
+**Why This Is Necessary:**
+- GitHub serves blueprint files from the web, which get cached by browsers
+- Home Assistant also caches blueprint definitions in memory
+- The raw URL forces fetching the true latest content
+- This is a known limitation of blueprint imports
+
+### Troubleshooting Cache Issues
+
+If you still see old blueprint errors after clearing cache:
+
+1. **Check Git Logs to Confirm Push**
+   ```bash
+   git log --oneline -3
+   ```
+   Verify your latest commit is listed
+
+2. **Wait 1-2 Minutes**
+   GitHub CDN may take time to serve the latest version
+
+3. **Check GitHub Directly**
+   Visit: https://raw.githubusercontent.com/Alvin366/EventLog/main/blueprints/eventlog_master.yaml
+   Verify the latest code is there
+
+4. **Clear All HA Caches**
+   - Hard refresh browser (Ctrl+Shift+Delete)
+   - Clear browser cookies for home-assistant instance
+   - Restart Home Assistant (Settings → System → Restart Home Assistant)
+
 ## Version Management
 
 ### Semantic Versioning
@@ -224,6 +288,7 @@ Developer Tools → Services → manually trigger events
 3. Commit with version tag
 4. Push to main branch
 5. Create GitHub release
+6. Users must clear cache and re-import blueprint
 
 ## Future Development
 
