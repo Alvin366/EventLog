@@ -89,8 +89,12 @@ action:
 
   - variables:
       current_active: >-
-        {% set events = state_attr('input_text.eventlog_active_events', 'value') | default('[]') | from_json %}
-        {% if events is iterable and events != none %} {{ events }} {% else %} [] {% endif %}
+        {% set event_state = states('input_text.eventlog_active_events') | default('[]') %}
+        {% if event_state and event_state != 'unavailable' %}
+          {{ event_state | from_json(default=[]) }}
+        {% else %}
+          []
+        {% endif %}
 
   - variables:
       is_duplicate: >-
