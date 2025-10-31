@@ -41,34 +41,54 @@ EventLog is a **single Home Assistant blueprint** you import to start logging ev
 - Works with any automation or sensor
 - Connect multiple event sources
 
-## Quick Start (2 minutes)
+## Quick Start (5 minutes)
 
-### 1. Import Blueprint
+### Step 1: Create Text Helpers (2 minutes)
 
-In Home Assistant:
+Before importing the blueprint, create three text helpers to store events:
+
+1. Go to **Settings → Devices & Services → Helpers**
+2. Click **"Create Helper" → "Text"**
+
+**Create Helper 1**:
+- **Name**: EventLog Active Events
+- **Entity ID**: `eventlog_active_events`
+- **Max length**: 2048
+- **Initial value**: `[]`
+- Click **"Create"**
+
+**Create Helper 2**:
+- **Name**: EventLog Acknowledged Events
+- **Entity ID**: `eventlog_acknowledged_events`
+- **Max length**: 2048
+- **Initial value**: `[]`
+- Click **"Create"**
+
+**Create Helper 3**:
+- **Name**: EventLog Archive
+- **Entity ID**: `eventlog_archive`
+- **Max length**: 2048
+- **Initial value**: `[]`
+- Click **"Create"**
+
+### Step 2: Import Blueprint (1 minute)
+
 1. Go to **Settings → Automations & Scenes → Blueprints**
 2. Click **Import Blueprint**
-3. Paste: `https://github.com/Alvin366/EventLog/blob/main/blueprints/eventlog_master.yaml`
+3. Paste: `https://raw.githubusercontent.com/Alvin366/EventLog/main/blueprints/eventlog_master.yaml`
 4. Click **Import**
 
-### 2. Create Automation
+### Step 3: Create Automation (1 minute)
 
 1. Click **Create Automation** on the imported blueprint
-2. Configure:
-   - **Event Category**: `system` (or your choice)
-   - **Event Severity**: `minor` (or appropriate level)
+2. Configure with defaults or customize:
+   - **Event Category**: `system`
+   - **Event Severity**: `minor`
+   - **Dedup Window**: 5 (minutes)
    - **Other options**: Leave as defaults or customize
 3. Click **Create**
 
-### 3. Add Event Sources
-
-Use the **Event Source** blueprint to feed events:
-
-1. Import: `https://github.com/Alvin366/EventLog/blob/main/blueprints/eventlog_event_source.yaml`
-2. Create automation pointing to any entity
-3. Events automatically go to EventLog
-
-### 4. View Events
+### Step 4: View Events (1 minute)
 
 Create a dashboard card to display events:
 
@@ -78,7 +98,16 @@ title: EventLog
 entities:
   - entity: input_text.eventlog_active_events
   - entity: input_text.eventlog_acknowledged_events
+  - entity: input_text.eventlog_archive
 ```
+
+### Step 5 (Optional): Add Event Sources
+
+Use the **Event Source** blueprint to automatically feed events:
+
+1. Import: `https://raw.githubusercontent.com/Alvin366/EventLog/main/blueprints/eventlog_event_source.yaml`
+2. Create automation pointing to any entity
+3. Events automatically go to EventLog
 
 ## How It Works
 

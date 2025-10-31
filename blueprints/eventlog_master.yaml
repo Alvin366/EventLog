@@ -3,12 +3,9 @@ blueprint:
   description: |
     Home Assistant blueprint for collecting and managing events with deduplication, acknowledgment, and archival.
 
-    IMPORTANT: Before creating an automation from this blueprint, you MUST create three text helpers:
-    1. eventlog_active_events (initial value: [])
-    2. eventlog_acknowledged_events (initial value: [])
-    3. eventlog_archive (initial value: [])
+    Events are stored in text helpers for easy access and display on dashboards.
 
-    See Setup Instructions in README for details.
+    Setup: Create three text helpers first (see README Quick Start).
   domain: automation
   source_url: https://github.com/Alvin366/EventLog/blob/main/blueprints/eventlog_master.yaml
 
